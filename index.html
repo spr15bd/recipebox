@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+	<style>
+
+		.container-fluid {
+  			padding-top: 20px;
+		}
+		.card {
+  			margin-top: 5px;
+  			margin-left: 15px;
+		}
+
+		.outer {
+			background-color:lightgreen;
+  			padding-top: 15px;
+  			padding-bottom: 10px;
+		}
+		.title {
+  			text-align: center;
+  			font-weight:600;
+		}
+		#collapseOne, #collapseTwo {
+  			padding:10px;
+		}
+		.card-body {
+  			padding-top:0px;
+  			padding-left:0;
+		}
+		.card-link, a:hover {
+  			color:black;
+		}
+		.card-header {
+  			background-color:lightgreen;
+		}
+		.modal-header {
+  			background-color:lightgreen;
+		}
+		.modal-dialog {
+  			position: absolute;
+  			top: 50%;
+  			left: 50%;
+  			transform: translate(-50%, -50%);
+ 			font-weight:600;
+  			width: 75%;
+  			text-align: left;
+		}
+		.add-main {
+  			font-size:20px;
+		}
+		.add-modal {
+  			font-size:16px;
+		}
+		input.recipe, input.ingredients {
+  			width: 100%;
+		}
+		.btn {
+  			margin-right:6px;
+		}
+		.footer {
+  			margin-top: 20px;
+  			margin-left: 15px;
+		}
+
+	</style>
+	<head>
+		
+		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+		<script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+		<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"></link>
+		<link rel="stylesheet" href="main.css"></link>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type='text/babel'>
+			class RecipeBox extends React.Component {
+  				constructor(props) {
+    					super(props);
+    					/* If there are any recipes stored in localStorage load them, if not
+     					* use the defaults below (spagbog, pizza, turkey roast)
+     					*/
+    					var preloadedRecipes=[];
+    					if (localStorage.getItem("_recipes")) {
+      						preloadedRecipes=JSON.parse(localStorage.getItem("_recipes"));
+    					} else {
+      						preloadedRecipes=[
+        						["Spaghetti bolognaise","Spaghetti","Pasta sauce","Mushrooms","Onion", "Minced beef"],
+        						["Pizza","Strong white flour","Yeast","Passata","Mushrooms","Onion", "Mozzarella cheese"],
+        						["Turkey roast","Roast turkey","Gravy","Potatoes","Carrotts","Cauliflour"]
+      						];
+    					}
+    					this.state={
+      						recipes:preloadedRecipes,
+      						isModalOpen: false,
+      						action: "",
+      						currentRecipe: ""
+    					};
+    					this.toggleModal=this.toggleModal.bind(this);
+    					this.handleAdd=this.handleAdd.bind(this);
+    					this.handleEdit=this.handleEdit.bind(this);
+    					this.updateRecipes=this.updateRecipes.bind(this);
+  				}
+  				handleAdd() {
+    					this.setState({action:"Add a New Recipe"});
+    					this.toggleModal();
+  				}
+  				handleEdit(currentRecipe) {
+    					this.setState({ 
+						action:"Edit a Recipe",
+                    				currentRecipe: currentRecipe
+                   			});
+    					this.toggleModal();
+  				}
+  				handleDelete(recipe) {
+    					var newRecipes=this.state.recipes;
+    					var index = newRecipes.indexOf(recipe);
+    					if (index !== -1) newRecipes.splice(index, 1);
+    					this.setState({recipes:newRecipes});
+  				}
+  				updateRecipes(recipeName, ingredients) {
+    					if (recipeName==null||recipeName==""||ingredients==null||ingredients=="") {
+      						this.toggleModal();
+      						return;
+    					}
+    					this.setState({isModalOpen: false});
+    					var oldRecipes=this.state.recipes;
+    					var res=ingredients.split(",");
+    					for (var x=0; x<oldRecipes.length; x++) {
+      						var sameIngredients=true;
+      						for (var y=1; y<oldRecipes.length; y++) {
+        						if (oldRecipes[x][y]!=ingredients[y-1]) {
+          							sameIngredients=false;
+							}
+      						}
+      						if (sameIngredients) {
+        						return;
+      						}
+      						if (oldRecipes[x][0]==recipeName) this.handleDelete(oldRecipes[x]);
+    					}
+    
+    					var newRecipe=[];
+    					newRecipe[0]=recipeName;
+    					for (var i=0; i<res.length; i++) {
+      						newRecipe.push(res[i]);
+    					}
+    
+    					var updatedRecipes=this.state.recipes;
+    					updatedRecipes.push(newRecipe);
+    					localStorage.setItem("_recipes", JSON.stringify(updatedRecipes));
+    					this.setState({recipes:JSON.parse(localStorage.getItem("_recipes"))});
+  				}
+  				render() {
+    					const cards=[];
+    					var ingredients, cardButtons;
+    					var x=0;
+    					var y;
+    					// Populate each card with a recipe                     
+    					this.state.recipes.forEach((recipe) =>{
+      						ingredients=[];
+      						cardButtons=[];
+      						x++;
+      						cardButtons.push( <div>
+          						<button type="button" className="btn btn-danger" onClick={() => this.handleDelete(recipe)}>Delete</button>
+          						<button type="button" className="btn btn-secondary" onClick={() => this.handleEdit(recipe)}>Edit</button>
+        					</div>);
+      						y=1;
+      						while (y<recipe.length) {
+        						ingredients.push(<li className="list-group-item">{recipe[y]}</li>);
+       							y++;
+      						}
+      						cards.push(<div className="card">
+                  					<div className="card-header">
+                    						<a className="collapsed card-link" data-toggle="collapse" data-parent="#accordion" href={"#collapse"+x}>
+                      							{recipe[0]}
+                    						</a>
+                  					</div>
+                  					<div id={"collapse"+x} className="collapse">
+                    						<div className="card-body">
+                      							<div className="title">
+                        							Ingredients
+                      							</div>
+                      							<div>
+                        							<hr/>
+                        							<ul className="list-group">
+                          								{ingredients}
+                        							</ul>
+                      							</div>
+                    						</div>
+                    						<div>
+                      							{cardButtons}
+                    						</div>
+                  					</div>
+                				</div>);
+    					});
+    					//Display the cards
+      					return (
+        					<div className="container-fluid">
+          						<div className="card outer">
+            							<div className="card-body">
+             								<div id="accordion">
+               				 					{cards}
+                							</div>
+            							</div>
+          						</div>
+          						<div className="footer">
+          							<button type="button" className="btn btn-primary add-main" onClick={() => this.handleAdd()}>Add Recipe</button>
+          							<Modal visibilityHandler={this.toggleModal} recipeHandler={this.updateRecipes} isOpen={this.state.isModalOpen} action={this.state.action} currentRecipe={this.state.currentRecipe}/>
+          						</div>
+        					</div>
+      					);
+  				}
+  				toggleModal() {
+    					this.setState({ isModalOpen: !this.state.isModalOpen });
+  				}
+			}
+
+			class Modal extends React.Component {
+  				constructor(props) {
+    					super(props);
+    					this.state={
+      						recipeName:"",
+      						ingredients: ""
+    					};
+    					this.handleCloseClick=this.handleCloseClick.bind(this);
+    					this.handleAddClick=this.handleAddClick.bind(this);
+    					this.handleUpdateClick=this.handleUpdateClick.bind(this);
+    					this.handleRecipeNameChange=this.handleRecipeNameChange.bind(this);
+    					this.handleIngredientsChange=this.handleIngredientsChange.bind(this);
+  				}
+  
+  				/* Use componentWillReceiveProps method to pass the current recipe 
+   				 * props variable to the modal state */
+  				componentWillReceiveProps(nextProps){ 
+    					if(nextProps.currentRecipe !== this.props.currentRecipe){
+      						var recipeIngredients="";
+      						for (var x=1; x<nextProps.currentRecipe.length; x++) {
+        						if (x<nextProps.currentRecipe.length-1) {
+          							recipeIngredients+=nextProps.currentRecipe[x]+",";
+        						} else {
+          							recipeIngredients+=nextProps.currentRecipe[x];
+        						}
+      						}
+      						this.setState({recipeName:nextProps.currentRecipe[0], ingredients:recipeIngredients});
+    					}
+  				}
+  				// Handle modal input
+  				handleCloseClick() {
+    					this.props.visibilityHandler();
+  				}
+  
+  				handleAddClick() {
+    					this.props.recipeHandler(this.state.recipeName, this.state.ingredients);
+  				}
+  
+  				handleUpdateClick() {
+    					this.props.recipeHandler(this.state.recipeName, this.state.ingredients);
+  				}
+  				handleRecipeNameChange(event) {
+    					this.setState({recipeName:event.target.value});
+  				}
+  				handleIngredientsChange(event) {
+    					this.setState({
+      						ingredients:event.target.value
+    					});
+  				}
+  				/* Depending on whether the modal is for editing or adding new recipes,
+   				 * display its contents */
+  				render() {
+    					if (!this.props.isOpen) {
+      						return null;
+    					} else {
+      						var recipeNameDetails=[]; var recipeIngredientsDetails=[]; var updateButton=[];
+      						if (this.props.action=="Edit a Recipe") {
+        						updateButton.push(<button type="button" className="btn btn-primary add-modal" onClick={this.handleUpdateClick}>Complete Edit</button>);
+        						recipeNameDetails.push(
+        							<input type="text" className="recipe" defaultValue={this.state.recipeName} onChange={this.handleRecipeNameChange}>
+        							</input>
+        						);
+        						recipeIngredientsDetails.push(
+        							<input type="text" className="ingredients" defaultValue={this.state.ingredients} onChange={this.handleIngredientsChange}>
+        							</input>
+        						);
+      						} else {
+        						updateButton.push(<button type="button" className="btn btn-primary add-modal" onClick={this.handleAddClick}>Add Recipe</button>);
+        						recipeNameDetails.push(
+        							<input type="text" className="recipe" placeholder="Enter the recipe name" onChange={this.handleRecipeNameChange}>
+        							</input>
+        						);
+        						recipeIngredientsDetails.push(
+        							<input type="text" className="ingredients" placeholder="Enter the ingredients, separated by commas" onChange={this.handleIngredientsChange}>
+        							</input>
+        						);
+      						}
+      						return(
+        						<div className="modal-dialog modal-dialog-centered">
+          							<div className="modal-content">
+            								<div className="modal-header">
+              									<h5>{this.props.action}</h5>
+              									<button className="close" onClick={this.handleCloseClick}>&times;</button>
+            								</div>
+            								<div className="modal-body">
+              									<hr/>
+              									<p>Recipe</p>
+              									<p>{recipeNameDetails}</p>
+              									<p>Ingredients</p>
+              									<p>{recipeIngredientsDetails}</p>
+              									<hr/>
+            								</div>
+            								<div className="modal-footer">
+              									{updateButton}
+              									<button type="button" className="btn btn-secondary" onClick={this.handleCloseClick}>Close</button>
+            								</div>
+          							</div> 
+        						</div>
+      						);
+    					}
+  				}
+			}
+			ReactDOM.render (
+  				<RecipeBox />, 
+  				document.getElementById('root')
+			);
+		</script>
+	</body>
+</html>
